@@ -144,7 +144,7 @@ has updated => ( is => 'ro', isa => 'DateTime', required => 0 );
 
 sub _build_dir {
     my $pauseid = ref $_[0] ? shift->pauseid : shift;
-    return MetaCPAN::Util::author_dir($pauseid);
+    return MetaCPAN::Util::author_dir( $pauseid );
 }
 
 sub _build_gravatar_url {
@@ -183,9 +183,9 @@ sub validate {
         {
             my $value = $data->{ $attr->name };
             if ( $attr->should_coerce ) {
-                $value = $attr->type_constraint->coerce($value);
+                $value = $attr->type_constraint->coerce( $value );
             }
-            my $message = $attr->type_constraint->validate($value);
+            my $message = $attr->type_constraint->validate( $value );
             push( @result, { field => $attr->name, message => $message } )
                 if ( defined $message );
         }

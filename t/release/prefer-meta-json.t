@@ -5,23 +5,23 @@ use warnings;
 use MetaCPAN::Server::Test;
 
 my $model   = model();
-my $idx     = $model->index('cpan');
-my $release = $idx->type('release')->get(
+my $idx     = $model->index( 'cpan' );
+my $release = $idx->type( 'release' )->get(
     {   author => 'LOCAL',
         name   => 'Prefer-Meta-JSON-1.1'
     }
 );
 
-is( $release->name, 'Prefer-Meta-JSON-1.1', 'name ok' );
-is( $release->distribution, 'Prefer-Meta-JSON', 'distribution ok' );
-is( $release->author, 'LOCAL', 'author ok' );
-ok( $release->first, 'Release is first');
+is( $release->name,         'Prefer-Meta-JSON-1.1', 'name ok' );
+is( $release->distribution, 'Prefer-Meta-JSON',     'distribution ok' );
+is( $release->author,       'LOCAL',                'author ok' );
+ok( $release->first, 'Release is first' );
 
-is(ref $release->metadata, "HASH", "comes with metadata in a hashref");
-is($release->metadata->{"meta-spec"}{version}, 2, "meta_spec version is 2");
+is( ref $release->metadata, "HASH", "comes with metadata in a hashref" );
+is( $release->metadata->{"meta-spec"}{version}, 2, "meta_spec version is 2" );
 
 {
-    my @files = $idx->type('file')->filter(
+    my @files = $idx->type( 'file' )->filter(
         {   and => [
                 { term   => { 'file.author'  => $release->author } },
                 { term   => { 'file.release' => $release->name } },
@@ -38,10 +38,10 @@ is($release->metadata->{"meta-spec"}{version}, 2, "meta_spec version is 2");
 
     is( scalar @modules, 2, 'file contains two modules' );
 
-    is( $modules[0]->name,    'Prefer::Meta::JSON', 'module name ok' );
+    is( $modules[0]->name, 'Prefer::Meta::JSON', 'module name ok' );
     is( $modules[0]->indexed, 1, 'main module indexed' );
 
-    is( $modules[1]->name,    'Prefer::Meta::JSON::Gremlin', 'module name ok' );
+    is( $modules[1]->name, 'Prefer::Meta::JSON::Gremlin', 'module name ok' );
     is( $modules[1]->indexed, 0, 'module not indexed' );
 }
 

@@ -48,10 +48,11 @@ sub run {
     my $es = $self->es;
     $self->index->refresh;
     my $filename = join( "-",
-        DateTime->now->strftime("%F"),
+        DateTime->now->strftime( "%F" ),
         grep {defined} $self->index->name,
         $self->type );
-    my $file = $self->home->subdir(qw(var backup))->file("$filename.json.gz");
+    my $file
+        = $self->home->subdir( qw(var backup) )->file( "$filename.json.gz" );
     $file->dir->mkpath unless ( -e $file->dir );
     my $fh = IO::Zlib->new( "$file", "wb4" );
     my $scroll = $es->scrolled_search(
@@ -65,7 +66,7 @@ sub run {
     log_info { "Backing up ", $scroll->total, " documents" };
 
     while ( my $result = $scroll->next ) {
-        print $fh encode_json($result), $/;
+        print $fh encode_json( $result ), $/;
     }
     close $fh;
     log_info {"done"};
@@ -80,7 +81,7 @@ sub run_restore {
     my $es = $self->es;
     my $fh = IO::Zlib->new( $self->restore->stringify, "rb" );
     while ( my $line = $fh->readline ) {
-        my $obj    = decode_json($line);
+        my $obj    = decode_json( $line );
         my $parent = $obj->{fields}->{_parent};
         push(
             @bulk,
@@ -97,14 +98,14 @@ sub run_restore {
         }
     }
     $es->bulk_index( \@bulk );
-    log_info { "done"};
+    log_info {"done"};
 
 }
 
 sub run_purge {
     my $self = shift;
     my $now  = DateTime->now;
-    $self->home->subdir(qw(var backup))->recurse(
+    $self->home->subdir( qw(var backup) )->recurse(
         callback => sub {
             my $file = shift;
             return if ( $file->is_dir );

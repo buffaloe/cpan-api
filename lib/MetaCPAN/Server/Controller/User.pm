@@ -13,8 +13,8 @@ __PACKAGE__->config(
 sub auto : Private {
     my ( $self, $c ) = @_;
     if ( my $token = $c->req->params->{access_token} ) {
-        my $user = $c->model('User::Account')->find_token($token);
-        $c->authenticate( { user => $user } ) if ($user);
+        my $user = $c->model( 'User::Account' )->find_token( $token );
+        $c->authenticate( { user => $user } ) if ( $user );
     }
     return $c->user_exists;
 }
@@ -23,7 +23,7 @@ sub index : Path {
     my ( $self, $c ) = @_;
     $c->stash( $c->user->data );
     delete $c->stash->{code};
-    $c->detach( $c->view('JSON') );
+    $c->detach( $c->view( 'JSON' ) );
 }
 
 sub identity : Local : ActionClass('REST') {
@@ -31,8 +31,8 @@ sub identity : Local : ActionClass('REST') {
 
 sub identity_GET {
     my ( $self, $c ) = @_;
-    my ($identity) = @{ $c->req->arguments };
-    ($identity)
+    my ( $identity ) = @{ $c->req->arguments };
+    ( $identity )
         = grep { $_->{name} eq $identity } @{ $c->user->data->{identity} };
     $identity
         ? $self->status_ok( $c, entity => $identity )
@@ -41,10 +41,10 @@ sub identity_GET {
 
 sub identity_DELETE {
     my ( $self, $c ) = @_;
-    my ($identity) = @{ $c->req->arguments };
+    my ( $identity ) = @{ $c->req->arguments };
     my $ids = $c->user->identity;
-    ($identity) = grep { $_->name eq $identity } @$ids;
-    if ($identity) {
+    ( $identity ) = grep { $_->name eq $identity } @$ids;
+    if ( $identity ) {
         @$ids = grep { $_->{name} ne $identity->name } @$ids;
         $c->user->put( { refresh => 1 } );
         $self->status_ok( $c, entity => $identity );
@@ -56,12 +56,13 @@ sub identity_DELETE {
 
 sub profile : Local : ActionClass('REST') {
     my ( $self, $c ) = @_;
-    my ($pause) = $c->user->get_identities('pause');
-    unless($pause) {
+    my ( $pause ) = $c->user->get_identities( 'pause' );
+    unless ( $pause ) {
         $self->status_not_found( $c, message => 'Profile doesn\'t exist' );
         $c->detach;
     }
-    my $profile = $c->model('CPAN::Author')->inflate(0)->get( $pause->key );
+    my $profile
+        = $c->model( 'CPAN::Author' )->inflate( 0 )->get( $pause->key );
     $c->stash->{profile} = $profile->{_source};
 }
 
@@ -84,19 +85,20 @@ sub profile_PUT {
         donation city region country
         location extra perlmongers);
     $profile->{updated} = DateTime->now;
-    my @errors = $c->model('CPAN::Author')->new_document->validate($profile);
+    my @errors
+        = $c->model( 'CPAN::Author' )->new_document->validate( $profile );
 
-    if (@errors) {
+    if ( @errors ) {
         $self->status_bad_request( $c, message => 'Validation failed' );
         $c->stash->{rest}->{errors} = \@errors;
     }
     else {
         $profile
-            = $c->model('CPAN::Author')->put( $profile, { refresh => 1 } );
+            = $c->model( 'CPAN::Author' )->put( $profile, { refresh => 1 } );
         $self->status_created(
             $c,
             location => $c->uri_for( '/author/' . $profile->{pauseid} ),
-            entity   => $profile->meta->get_data($profile)
+            entity   => $profile->meta->get_data( $profile )
         );
     }
 }

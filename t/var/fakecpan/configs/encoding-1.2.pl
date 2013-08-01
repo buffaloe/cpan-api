@@ -1,14 +1,13 @@
-{
-  "name"     => "Encoding",
-  "abstract" => "Beyond 7bit ascii",
-  "version"  => "1.2",
-  "X_Module_Faker" => {
-    "cpan_author" => "RWSTAUNER",
-    "append" => [
-      {
-        "file"     => "lib/Encoding/UTF8.pm",
-        "content"  => "package Encoding::UTF8;\n\nuse utf8;\nmy \$heart = qq<\342\231\245>;\n",
-      },
-    ],
-  },
+{   "name"           => "Encoding",
+    "abstract"       => "Beyond 7bit ascii",
+    "version"        => "1.2",
+    "X_Module_Faker" => {
+        "cpan_author" => "RWSTAUNER",
+        "append"      => [
+            {   "file" => "lib/Encoding/UTF8.pm",
+                "content" =>
+                    "package Encoding::UTF8;\n\nuse utf8;\nmy \$heart = qq<\342\231\245>;\n",
+            },
+        ],
+    },
 }

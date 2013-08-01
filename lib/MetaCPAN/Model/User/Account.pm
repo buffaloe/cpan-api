@@ -94,7 +94,8 @@ has looks_human => (
 
 sub _build_looks_human {
     my $self = shift;
-    return $self->has_identity('pause') || ( $self->passed_captcha ? 1 : 0 );
+    return $self->has_identity( 'pause' )
+        || ( $self->passed_captcha ? 1 : 0 );
 }
 
 =head2 timestamp
@@ -122,9 +123,9 @@ after add_identity => sub {
     my ( $self, $identity ) = @_;
     if ( $identity->{name} eq 'pause' ) {
         $self->clear_looks_human;
-        my $profile = $self->index->model->index('cpan')->type('author')
+        my $profile = $self->index->model->index( 'cpan' )->type( 'author' )
             ->get( $identity->{key} );
-        $profile->user( $self->id ) if ($profile);
+        $profile->user( $self->id ) if ( $profile );
         $profile->put;
     }
 };

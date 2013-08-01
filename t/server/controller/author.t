@@ -15,7 +15,7 @@ test_psgi app, sub {
     while ( my ( $k, $v ) = each %tests ) {
         ok( my $res = $cb->( GET $k), "GET $k" );
         is( $res->code, $v, "code $v" );
-        is( $res->header('content-type'),
+        is( $res->header( 'content-type' ),
             'application/json; charset=utf-8',
             'Content-type'
         );
@@ -27,7 +27,7 @@ test_psgi app, sub {
     }
 
     ok( my $res = $cb->( GET '/author/MO?callback=jsonp' ), "GET jsonp" );
-    is( $res->header('content-type'),
+    is( $res->header( 'content-type' ),
         'text/javascript; charset=UTF-8',
         'Content-type'
     );
@@ -98,8 +98,9 @@ test_psgi app, sub {
         $doy, 'same result as direct get' );
 
     {
-        ok( my $res = $cb->( GET '/author/_search?q=*&size=99999' ), "GET size=99999" );
-        is( $res->code, 416, 'bad request');
+        ok( my $res = $cb->( GET '/author/_search?q=*&size=99999' ),
+            "GET size=99999" );
+        is( $res->code, 416, 'bad request' );
     }
 
 };

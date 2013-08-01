@@ -42,24 +42,25 @@ sub _build_abstract {
     my $text = ${ $self->content };
     my ( $documentation, $abstract );
     my $section = MetaCPAN::Util::extract_section( $text, 'NAME' );
-    return undef unless ($section);
+    return undef unless ( $section );
     $section =~ s/^=\w+.*$//mg;
     $section =~ s/X<.*?>//mg;
+
     if ( $section =~ /^\s*(\S+)((\h+-+\h+(.+))|(\r?\n\h*\r?\n\h*(.+)))?/ms ) {
         chomp( $abstract = $4 || $6 ) if ( $4 || $6 );
-        my $name = MetaCPAN::Util::strip_pod($1);
+        my $name = MetaCPAN::Util::strip_pod( $1 );
         $documentation = $name if ( $name =~ /^[\w\.:\-_']+$/ );
     }
-    if ($abstract) {
+    if ( $abstract ) {
         $abstract =~ s/^=\w+.*$//xms;
         $abstract =~ s{\r?\n\h*\r?\n\h*.*$}{}xms;
         $abstract =~ s{\n}{ }gxms;
         $abstract =~ s{\s+$}{}gxms;
         $abstract =~ s{(\s)+}{$1}gxms;
-        $abstract = MetaCPAN::Util::strip_pod($abstract);
+        $abstract = MetaCPAN::Util::strip_pod( $abstract );
     }
-    if ($documentation) {
-        $self->documentation( MetaCPAN::Util::strip_pod($documentation) );
+    if ( $documentation ) {
+        $self->documentation( MetaCPAN::Util::strip_pod( $documentation ) );
     }
     return $abstract;
 }
@@ -128,11 +129,11 @@ sub _build_description {
     return undef unless ( $self->is_perl_file );
     my $section = MetaCPAN::Util::extract_section( ${ $self->content },
         'DESCRIPTION' );
-    return undef unless ($section);
+    return undef unless ( $section );
     my $parser = Pod::Text->new;
     my $text   = "";
     $parser->output_string( \$text );
-    $parser->parse_string_document("=pod\n\n$section");
+    $parser->parse_string_document( "=pod\n\n$section" );
     $text =~ s/\s+/ /g;
     $text =~ s/^\s+//;
     $text =~ s/\s+$//;
@@ -250,7 +251,7 @@ sub _build_documentation {
     elsif ( $documentation && grep { $_->name eq $documentation } @indexed ) {
         return $documentation;
     }
-    elsif (@indexed) {
+    elsif ( @indexed ) {
         return $indexed[0]->name;
     }
     elsif ( !@{ $self->module || [] } ) {
@@ -378,7 +379,7 @@ sub _build_sloc {
         splice( @content, $_->[0], $_->[1], map {''} 1 .. $_->[1] )
     } @{ $self->pod_lines };
     my $sloc = 0;
-    while (@content) {
+    while ( @content ) {
         my $line = shift @content;
         last if ( $line =~ /^\s*__END__/s );
         $sloc++ if ( $line !~ /^\s*#/ && $line =~ /\S/ );
@@ -517,7 +518,7 @@ sub _build_content {
     my @content = split( "\n", ${ $self->content_cb->() } || '' );
     my $content = "";
     my $in_data = 0;    # skip DATA section
-    while (@content) {
+    while ( @content ) {
         my $line = shift @content;
         if ( $line =~ /^\s*__END__\s*$/ ) {
             $in_data = 0;
@@ -528,7 +529,7 @@ sub _build_content {
         elsif ( $in_data && $line =~ /^=head1/ ) {
             $in_data = 0;
         }
-        next if ($in_data);
+        next if ( $in_data );
         $content .= $line . "\n";
     }
     return \$content;
@@ -592,7 +593,7 @@ sub is_perl_file {
     return 1 if ( $self->mime eq "text/x-script.perl" );
     return 1
         if ( $self->name !~ /\./
-        && !(grep { $self->name eq $_ } @NOT_PERL_FILES)
+        && !( grep { $self->name eq $_ } @NOT_PERL_FILES )
         && !$self->binary
         && $self->stat->{size} < 2**17 );
     return 0;
@@ -617,7 +618,7 @@ an instance of L<MetaCPAN::Document::Module>.
 
 sub add_module {
     my ( $self, @modules ) = @_;
-    $_ = MetaCPAN::Document::Module->new($_)
+    $_ = MetaCPAN::Document::Module->new( $_ )
         for ( grep { ref $_ eq 'HASH' } @modules );
     $self->module( [ @{ $self->module }, @modules ] );
 }
@@ -693,11 +694,11 @@ sub set_authorized {
     # only authorized perl distributions make it into the CPAN
     return () if ( $self->distribution eq 'perl' );
     foreach my $module ( @{ $self->module } ) {
-        $module->authorized(0)
+        $module->authorized( 0 )
             if ( $perms->{ $module->name } && !grep { $_ eq $self->author }
             @{ $perms->{ $module->name } } );
     }
-    $self->authorized(0)
+    $self->authorized( 0 )
         if ( $self->authorized
         && $self->documentation
         && $perms->{ $self->documentation }
@@ -728,7 +729,7 @@ my @ROGUE_DISTRIBUTIONS
 
 sub find {
     my ( $self, $module ) = @_;
-    my @candidates = $self->index->type("file")->filter(
+    my @candidates = $self->index->type( "file" )->filter(
         {   and => [
                 {   or => [
                         { term => { 'file.module.name'   => $module } },
@@ -747,23 +748,23 @@ sub find {
             'mime',
             { 'stat.mtime' => { order => 'desc' } }
         ]
-        )->size(100)->all;
+        )->size( 100 )->all;
 
-    my ($file) = grep {
+    my ( $file ) = grep {
         grep { $_->indexed && $_->authorized && $_->name eq $module }
             @{ $_->module || [] }
         } grep { !$_->documentation || $_->documentation eq $module }
         @candidates;
 
     $file ||= shift @candidates;
-    return $file ? $self->get($file->id) : undef;
+    return $file ? $self->get( $file->id ) : undef;
 }
 
 sub find_pod {
     my ( $self, $name ) = @_;
-    my $file = $self->find($name);
-    return $file unless ($file);
-    my ($module)
+    my $file = $self->find( $name );
+    return $file unless ( $file );
+    my ( $module )
         = grep { $_->indexed && $_->authorized && $_->name eq $name }
         @{ $file->module || [] };
     if ( $module && ( my $pod = $module->associated_pod ) ) {
@@ -793,14 +794,14 @@ sub find_provided_by {
                 { term => { 'file.module.indexed'    => 1 } },
             ]
         }
-    )->size(999)->all;
+    )->size( 999 )->all;
 }
 
 # filter find_provided_by results for indexed/authorized modules
 # and return a list of package names
 sub find_module_names_provided_by {
     my ( $self, $release ) = @_;
-    my $mods = $self->inflate(0)->find_provided_by($release);
+    my $mods = $self->inflate( 0 )->find_provided_by( $release );
     return (
         map { $_->{name} }
         grep { $_->{indexed} && $_->{authorized} }
@@ -816,13 +817,14 @@ sub prefix {
         map {
             { field     => { 'documentation.analyzed'  => "$_*" } },
                 { field => { 'documentation.camelcase' => "$_*" } }
-            } grep {$_} @query
+        } grep {$_} @query
     ];
     return $self->query(
         {   filtered => {
                 query => {
                     custom_score => {
                         query => { bool => { should => $should } },
+
                         #metacpan_script => 'prefer_shorter_module_names_100',
                         script =>
                             "_score - doc['documentation'].value.length()/100"
@@ -866,74 +868,77 @@ Find the history of a given module/documentation.
 =cut
 
 sub history {
-    my ($self, $type, $module, @path) = @_;
-    my $search = $type eq "module" 
-        ? $self->filter({
-            nested => {
-                path => "module",
+    my ( $self, $type, $module, @path ) = @_;
+    my $search
+        = $type eq "module" ? $self->filter(
+        {   nested => {
+                path  => "module",
                 query => {
                     constant_score => {
-                        filter => { and => [
-                            {   term =>
-                                    { "module.authorized" => \1 }
-                            },
-                            {   term => { "module.indexed" => \1 }
-                            },
-                            {   term => { "module.name" => $module }
-                            },
-                        ] }
+                        filter => {
+                            and => [
+                                { term => { "module.authorized" => \1 } },
+                                { term => { "module.indexed"    => \1 } },
+                                { term => { "module.name" => $module } },
+                            ]
+                        }
                     }
                 }
             }
-        })
-        : $type eq "file"
-        ? $self->filter({
-            and => [
-                { term => { "file.path" => join("/", @path) } },
+        }
+        )
+        : $type eq "file" ? $self->filter(
+        {   and => [
+                { term => { "file.path"         => join( "/", @path ) } },
                 { term => { "file.distribution" => $module } },
             ]
-        })
-        : $self->filter({
-            and => [
+        }
+        )
+        : $self->filter(
+        {   and => [
                 { term => { "file.documentation" => $module } },
-                { term => { "file.indexed" => \1 } },
-                { term => { "file.authorized" => \1 } },
+                { term => { "file.indexed"       => \1 } },
+                { term => { "file.authorized"    => \1 } },
             ]
-        });
-    return $search->sort([{ "file.date" => "desc"}]);
+        }
+        );
+    return $search->sort( [ { "file.date" => "desc" } ] );
 }
 
 sub _not_rogue {
-    my @rogue_dists = map { { term => { 'file.distribution' => $_ } } } @ROGUE_DISTRIBUTIONS;
+    my @rogue_dists = map { { term => { 'file.distribution' => $_ } } }
+        @ROGUE_DISTRIBUTIONS;
     return { not => { filter => { or => \@rogue_dists } } };
 }
 
 sub autocomplete {
-    my ($self, @terms) = @_;
-    my $query = join(" ", @terms);
+    my ( $self, @terms ) = @_;
+    my $query = join( " ", @terms );
     return $self unless $query;
     $query =~ s/::/ /g;
-    my @query  = split( /\s+/, $query );
+    my @query = split( /\s+/, $query );
     my $should = [
         map {
             { field     => { 'documentation.analyzed'  => "$_*" } },
                 { field => { 'documentation.camelcase' => "$_*" } }
-            } grep {$_} @query
+        } grep {$_} @query
     ];
-    return $self->query({
-        custom_score => {
-            query => { bool => { should => $should } },
-            script => "_score - doc['documentation'].value.length()/100",
+    return $self->query(
+        {   custom_score => {
+                query => { bool => { should => $should } },
+                script => "_score - doc['documentation'].value.length()/100",
+            }
         }
-    })->filter({
-        and => [
-            $self->_not_rogue,
-            { exists => { field => 'documentation' } },
-            { term   => { 'file.indexed' => \1 } },
-            { term   => { 'file.authorized' => \1 } },
-            { term => { 'file.status'  => 'latest' } },
-        ]
-    });
+        )->filter(
+        {   and => [
+                $self->_not_rogue,
+                { exists => { field             => 'documentation' } },
+                { term   => { 'file.indexed'    => \1 } },
+                { term   => { 'file.authorized' => \1 } },
+                { term   => { 'file.status'     => 'latest' } },
+            ]
+        }
+        );
 }
 
 __PACKAGE__->meta->make_immutable;

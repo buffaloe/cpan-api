@@ -15,12 +15,12 @@ has packages => ( is => 'ro', lazy_build => 1, traits => ['NoGetopt'], );
 
 sub _build_packages {
     return Parse::CPAN::Packages::Fast->new(
-        shift->cpan->file(qw(modules 02packages.details.txt.gz)) );
+        shift->cpan->file( qw(modules 02packages.details.txt.gz) ) );
 }
 
 sub run {
     my $self    = shift;
-    my $modules = $self->index->type('file');
+    my $modules = $self->index->type( 'file' );
     log_info {"Dry run: updates will not be written to ES"}
     if ( $self->dry_run );
     my $p = $self->packages;
@@ -29,7 +29,7 @@ sub run {
     my @filter;
     if ( my $distribution = $self->distribution ) {
         foreach my $package ( $p->packages ) {
-            my $dist = $p->package($package)->distribution->dist;
+            my $dist = $p->package( $package )->distribution->dist;
             push( @filter, $package )
                 if ( $dist && $dist eq $distribution );
         }
@@ -62,7 +62,7 @@ sub run {
             'file.release',     'file.distribution',
             'file.date',        'file.status',
         ]
-        )->size(10000)->raw->scroll('1h');
+        )->size( 10000 )->raw->scroll( '1h' );
 
     my ( %downgrade, %upgrade );
     log_debug { "Found " . $scroll->total . " modules" };
@@ -77,9 +77,9 @@ sub run {
             ? @{ $data->{'module.name'} }
             : $data->{'module.name'};
         @modules = grep {defined} map {
-            eval { $p->package($_) }
+            eval { $p->package( $_ ) }
         } @modules;
-        foreach my $module (@modules) {
+        foreach my $module ( @modules ) {
             my $dist = $module->distribution;
             if (   $dist->distvname eq $data->{release}
                 && $dist->cpanid eq $data->{author} )
@@ -114,13 +114,13 @@ sub reindex {
     my ( $self, $source, $status ) = @_;
     my $es = $self->es;
 
-    my $release = $self->index->type('release')->get(
+    my $release = $self->index->type( 'release' )->get(
         {   author => $source->{author},
             name   => $source->{release},
         }
     );
 
-    $release->status($status);
+    $release->status( $status );
     log_info {
         $status eq 'latest' ? "Upgrading " : "Downgrading ",
             "release ", $release->name || '';
@@ -163,7 +163,7 @@ sub reindex {
                     index => $self->index->name,
                     type  => 'file',
                     id    => $row->{_id},
-                    data => { %$source, status => $status }
+                    data  => { %$source, status => $status }
                 }
             }
         ) unless ( $self->dry_run );
@@ -172,7 +172,7 @@ sub reindex {
             @bulk = ();
         }
     }
-    $self->es->bulk( \@bulk ) if (@bulk);
+    $self->es->bulk( \@bulk ) if ( @bulk );
 }
 
 sub compare_dates {

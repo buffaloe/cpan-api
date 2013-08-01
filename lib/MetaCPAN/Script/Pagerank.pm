@@ -39,7 +39,7 @@ sub run {
         foreach my $dep ( @{ $release->{_source}->{dependency} || [] } ) {
             next if ( $dep->{phase} ne 'runtime' );
             my $dist = $modules->{ $dep->{module} };
-            next unless ($dist);
+            next unless ( $dist );
             $i++;
             push( @edges, [ $release->{_source}->{name}, $dist ] );
         }
@@ -85,14 +85,14 @@ sub get_recent_modules {
         next if ( $file->{fields}->{distribution} eq 'perl' );
         my $modules;
         my $data;
-        for (qw(name authorized indexed)) {
+        for ( qw(name authorized indexed) ) {
             $data->{$_} = $file->{fields}->{"module.$_"};
             $data->{$_} = [ $data->{$_} ] unless ( ref $data->{$_} );
         }
         for ( my $i = 0; $i < @{ $data->{name} }; $i++ ) {
             next
                 unless ( $data->{indexed}->[$i] eq "true"
-                && $data->{authorized}->[$i]  eq "true");
+                && $data->{authorized}->[$i] eq "true" );
             $result->{ $data->{name}->[$i] } = $file->{fields}->{release};
         }
     }

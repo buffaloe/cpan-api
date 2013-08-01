@@ -11,11 +11,11 @@ my @tests = (
 
 test_psgi app, sub {
     my $cb = shift;
-    for my $test (@tests) {
-        my ($k, $v) = @{ $test };
+    for my $test ( @tests ) {
+        my ( $k, $v ) = @{$test};
         ok( my $res = $cb->( GET $k), "GET $k" );
         is( $res->code, $v, "code $v" );
-        is( $res->header('content-type'),
+        is( $res->header( 'content-type' ),
             'application/json; charset=utf-8',
             'Content-type'
         );

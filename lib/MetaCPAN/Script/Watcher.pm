@@ -25,22 +25,22 @@ my @segments = qw(1h 6h 1d 1W 1M 1Q 1Y Z);
 
 sub run {
     my $self = shift;
-    while (1) {
+    while ( 1 ) {
         $latest = eval { $self->latest_release };
-        if ($@) {
+        if ( $@ ) {
             log_error {"getting latest release failed: $@"};
-            sleep(15);
+            sleep( 15 );
             next;
         }
         my @changes
             = $self->backpan ? $self->backpan_changes : $self->changes;
-        while ( my $release = pop(@changes) ) {
+        while ( my $release = pop( @changes ) ) {
             $release->{type} eq 'delete'
-                ? $self->reindex_release($release)
-                : $self->index_release($release);
+                ? $self->reindex_release( $release )
+                : $self->index_release( $release );
         }
         last if ( $self->backpan );
-        sleep(15);
+        sleep( 15 );
     }
 }
 
@@ -50,10 +50,11 @@ sub changes {
     my $archive = $latest->archive;
     my %seen;
     my @changes;
-    for my $segment (@segments) {
+    for my $segment ( @segments ) {
         log_debug {"Loading RECENT-$segment.json"};
         my $json
-            = decode_json( $self->cpan->file("RECENT-$segment.json")->slurp );
+            = decode_json(
+            $self->cpan->file( "RECENT-$segment.json" )->slurp );
         for (
             grep {
                 $_->{path}
@@ -121,20 +122,20 @@ sub backpan_changes {
 sub latest_release {
     my $self = shift;
     return undef if ( $self->backpan );
-    return $self->index->type('release')
+    return $self->index->type( 'release' )
         ->sort( [ { 'date' => { order => "desc" } } ] )->first;
 }
 
 sub skip {
     my ( $self, $author, $archive ) = @_;
-    return $self->index->type('release')->filter(
+    return $self->index->type( 'release' )->filter(
         {   and => [
                 { term => { status  => 'backpan' } },
                 { term => { archive => $archive } },
                 { term => { author  => $author } },
             ]
         }
-    )->inflate(0)->count;
+    )->inflate( 0 )->count;
 }
 
 sub index_release {
@@ -143,7 +144,7 @@ sub index_release {
     for ( my $i = 0; $i < 15; $i++ ) {
         last if ( -e $tarball );
         log_debug {"Tarball $tarball does not yet exist"};
-        sleep(1);
+        sleep( 1 );
     }
 
     unless ( -e $tarball ) {
@@ -158,20 +159,20 @@ sub index_release {
         'release', $tarball, '--latest', '--index', $self->index->name
     );
     log_debug {"Running @run"};
-    system(@run) unless ( $self->dry_run );
+    system( @run ) unless ( $self->dry_run );
 }
 
 sub reindex_release {
     my ( $self, $release ) = @_;
     my $info = CPAN::DistnameInfo->new( $release->{path} );
-    $release = $self->index->type('release')->filter(
+    $release = $self->index->type( 'release' )->filter(
         {   and => [
                 { term => { author  => $info->cpanid } },
                 { term => { archive => $info->filename } },
             ]
         }
-    )->inflate(0)->first;
-    return unless ($release);
+    )->inflate( 0 )->first;
+    return unless ( $release );
     log_info {"Moving $release->{_source}->{name} to BackPAN"};
 
     my $es     = $self->es;
@@ -236,7 +237,7 @@ sub reindex_release {
             }
         }
     );
-    $self->es->bulk( \@bulk ) if (@bulk);
+    $self->es->bulk( \@bulk ) if ( @bulk );
 
 }
 

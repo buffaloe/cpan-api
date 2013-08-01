@@ -58,7 +58,7 @@ sub from_session {
 sub for_session {
     my ( $self, $c, $user ) = @_;
     my $delegate = $self->handles->{for_session};
-    return $user->$delegate($c);
+    return $user->$delegate( $c );
 }
 
 sub find_user {

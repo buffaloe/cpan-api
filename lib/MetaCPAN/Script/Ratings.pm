@@ -20,9 +20,9 @@ sub run {
     log_info { "Downloading " . $self->ratings };
     my @path   = qw( var tmp ratings.csv );
     my $target = $self->home->file( @path );
-    my $md5 = -e $target ? $self->digest( $target ) : 0;
-    my $res = $ua->mirror( $self->ratings, $target );
-    if ( $md5 eq $self->digest($target) ) {
+    my $md5    = -e $target ? $self->digest( $target ) : 0;
+    my $res    = $ua->mirror( $self->ratings, $target );
+    if ( $md5 eq $self->digest( $target ) ) {
         log_info {"No changes to ratings.csv"};
         return;
     }
@@ -32,7 +32,7 @@ sub run {
         fields => 'auto',
     );
 
-    my $type = $self->index->type('rating');
+    my $type = $self->index->type( 'rating' );
     log_debug {"Deleting old CPANRatings"};
     $type->filter( { term => { user => 'CPANRatings' } } )->delete;
     my $bulk  = $self->index->bulk( size => 500 );
@@ -66,7 +66,7 @@ sub digest {
     my ( $self, $file ) = @_;
     my $md5 = Digest::MD5->new;
     $md5->addfile( $file->openr );
-    my ($digest) = Dlog_debug {"MD5 of file $file is $_"} $md5->hexdigest;
+    my ( $digest ) = Dlog_debug {"MD5 of file $file is $_"} $md5->hexdigest;
     return $digest;
 }
 

@@ -23,7 +23,7 @@ test_psgi app, sub {
         "POST favorite"
     );
     is( $res->code, 201, 'status created' );
-    ok( my $location = $res->header('location'), "location header set" );
+    ok( my $location = $res->header( 'location' ), "location header set" );
     ok( $res = $cb->( GET $location ), "GET $location" );
     is( $res->code, 200, 'found' );
     my $json = decode_json( $res->content );

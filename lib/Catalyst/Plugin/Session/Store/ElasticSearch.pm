@@ -27,7 +27,7 @@ has _session_es_type => (
 
 sub get_session_data {
     my ( $self, $key ) = @_;
-    if ( my ($sid) = $key =~ /^\w+:(.*)/ ) {
+    if ( my ( $sid ) = $key =~ /^\w+:(.*)/ ) {
         my $data = eval {
             $self->_session_es->get(
                 index => $self->_session_es_index,
@@ -46,7 +46,7 @@ sub get_session_data {
 
 sub store_session_data {
     my ( $self, $key, $session ) = @_;
-    if ( my ($sid) = $key =~ /^session:(.*)/ ) {
+    if ( my ( $sid ) = $key =~ /^session:(.*)/ ) {
         $session->{_expires} = $self->session_expires;
         $self->_session_es->index(
             index   => $self->_session_es_index,
@@ -60,7 +60,7 @@ sub store_session_data {
 
 sub delete_session_data {
     my ( $self, $key ) = @_;
-    if ( my ($sid) = $key =~ /^session:(.*)/ ) {
+    if ( my ( $sid ) = $key =~ /^session:(.*)/ ) {
         eval {
             $self->_session_es->delete(
                 index   => $self->_session_es_index,

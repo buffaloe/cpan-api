@@ -16,16 +16,14 @@ Do not use this module directly.  Instead, use Archive::Any.
 =cut
 
 sub can_handle {
-    return(
-           'application/x-tar',
-           'application/x-gtar',
-           'application/x-gzip',
-           'application/x-bzip2',
-          );
+    return (
+        'application/x-tar',  'application/x-gtar',
+        'application/x-gzip', 'application/x-bzip2',
+    );
 }
 
 sub files {
-    my( $self, $file ) = @_;
+    my ( $self, $file ) = @_;
     my $t = Archive::Tar->new( $file );
     return $t->list_files;
 }

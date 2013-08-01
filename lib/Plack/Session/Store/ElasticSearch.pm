@@ -18,13 +18,13 @@ sub new {
 
 sub fetch {
     my ( $self, $session_id ) = @_;
-    return undef unless ($session_id);
+    return undef unless ( $session_id );
     my $data = eval {
         $self->es->get(
-            index => $self->index,
-            type  => $self->type,
-            id    => $session_id,
-            fields => ['_parent', '_source']
+            index  => $self->index,
+            type   => $self->type,
+            id     => $session_id,
+            fields => [ '_parent', '_source' ]
         );
     } || return undef;
     $data->{_parent} = delete $data->{fields}->{_parent};
@@ -34,9 +34,9 @@ sub fetch {
 sub store {
     my ( $self, $session_id, $session ) = @_;
     $self->es->index(
-        index => $self->index,
-        type  => $self->type,
-        id    => $session_id || undef,
+        index  => $self->index,
+        type   => $self->type,
+        id     => $session_id || undef,
         parent => $session->{_parent} || "",
         data => keys %$session ? $session->{_source} : { $self->type => {} },
         refresh => 1,

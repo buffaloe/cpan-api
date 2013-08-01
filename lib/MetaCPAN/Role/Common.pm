@@ -86,14 +86,14 @@ sub _build_model {
 
 # NOT A MOOSE BUILDER
 sub _build_logger {
-    my ($config) = @_;
+    my ( $config ) = @_;
     my $log = Log::Log4perl->get_logger( $ARGV[0] );
-    foreach my $c (@$config) {
+    foreach my $c ( @$config ) {
         my $layout = Log::Log4perl::Layout::PatternLayout->new( $c->{layout}
                 || "%d %p{1} %c: %m{chomp}%n" );
         my $app = Log::Log4perl::Appender->new( $c->{class}, %$c );
-        $app->layout($layout);
-        $log->add_appender($app);
+        $app->layout( $layout );
+        $log->add_appender( $app );
     }
     return $log;
 }
@@ -129,7 +129,7 @@ sub remote {
 sub run { }
 before run => sub {
     my $self = shift;
-    unless ($MetaCPAN::Role::Common::log) {
+    unless ( $MetaCPAN::Role::Common::log ) {
         $MetaCPAN::Role::Common::log = $self->logger;
         set_logger $self->logger;
     }

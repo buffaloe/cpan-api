@@ -31,12 +31,12 @@ my $MAX_SIZE = 5000;
 
 # apply "filters" like \&model but for fabricated data
 sub apply_request_filter {
-    my ($self, $c, $data) = @_;
+    my ( $self, $c, $data ) = @_;
 
-    if( my $fields = $c->req->param("fields") ){
+    if ( my $fields = $c->req->param( "fields" ) ) {
         my $filtered = {};
         my @fields = split /,/, $fields;
-        @$filtered{ @fields } = @$data{ @fields };
+        @$filtered{@fields} = @$data{@fields};
         $data = $filtered;
     }
 
@@ -44,15 +44,17 @@ sub apply_request_filter {
 }
 
 sub model {
-    my ($self, $c) = @_;
-    my $model = $c->model('CPAN')->type($self->type);
-    $model = $model->fields( [ map { split(/,/) } $c->req->param("fields") ] )
-        if $c->req->param("fields");
-    if(my ($size) = $c->req->param("size")) {
+    my ( $self, $c ) = @_;
+    my $model = $c->model( 'CPAN' )->type( $self->type );
+    $model
+        = $model->fields(
+        [ map { split( /,/ ) } $c->req->param( "fields" ) ] )
+        if $c->req->param( "fields" );
+    if ( my ( $size ) = $c->req->param( "size" ) ) {
         $c->detach( '/bad_request',
-        [ "size parameter exceeds maximum of $MAX_SIZE", 416 ] )
+            [ "size parameter exceeds maximum of $MAX_SIZE", 416 ] )
             if ( $size && $size > $MAX_SIZE );
-        $model = $model->size($size);
+        $model = $model->size( $size );
     }
     return $model;
 }
@@ -60,8 +62,8 @@ sub model {
 sub mapping : Path('_mapping') {
     my ( $self, $c ) = @_;
     $c->stash(
-        $c->model('CPAN')->es->mapping(
-            index => $c->model('CPAN')->index,
+        $c->model( 'CPAN' )->es->mapping(
+            index => $c->model( 'CPAN' )->index,
             type  => $self->type
         )
     );
@@ -70,16 +72,15 @@ sub mapping : Path('_mapping') {
 sub get : Path('') : Args(1) {
     my ( $self, $c, $id ) = @_;
     eval {
-        my $file = $self->model($c)->raw->get($id);
+        my $file = $self->model( $c )->raw->get( $id );
         $c->stash( $file->{_source} || $file->{fields} );
-    } or $c->detach('/not_found', [$@]);
+    } or $c->detach( '/not_found', [$@] );
 }
 
-sub all : Path('') : Args(0) :
-    ActionClass('Deserialize') {
+sub all : Path('') : Args(0) : ActionClass('Deserialize') {
     my ( $self, $c ) = @_;
     $c->req->params->{q} ||= '*' unless ( $c->req->data );
-    $c->forward('search');
+    $c->forward( 'search' );
 }
 
 sub search : Path('_search') : ActionClass('Deserialize') {
@@ -97,11 +98,11 @@ sub search : Path('_search') : ActionClass('Deserialize') {
     delete $params->{callback};
     eval {
         $c->stash(
-            $c->model('CPAN')->es->request(
+            $c->model( 'CPAN' )->es->request(
                 {   method => $req->method,
                     qs     => $params,
                     cmd    => join( '/',
-                        '',          $c->model('CPAN')->index,
+                        '',          $c->model( 'CPAN' )->index,
                         $self->type, '_search' ),
                     data => $req->data
                 }
@@ -113,7 +114,7 @@ sub search : Path('_search') : ActionClass('Deserialize') {
 sub join : ActionClass('Deserialize') {
     my ( $self, $c ) = @_;
     my $joins     = $self->relationships;
-    my @req_joins = $c->req->param('join');
+    my @req_joins = $c->req->param( 'join' );
     my $is_get    = ref $c->stash->{hits} ? 0 : 1;
     my $query
         = $c->req->params->{q}
@@ -129,7 +130,7 @@ sub join : ActionClass('Deserialize') {
 
     while ( my ( $join, $config ) = each %$joins ) {
         my $has_many = ref $config->{type};
-        my ($type) = $has_many ? @{ $config->{type} } : $config->{type};
+        my ( $type ) = $has_many ? @{ $config->{type} } : $config->{type};
         my $cself = $config->{self} || $join;
         next unless ( grep { $_ eq $join } @req_joins );
         my $data
@@ -138,7 +139,8 @@ sub join : ActionClass('Deserialize') {
             : [ map { $_->{_source} || $_->{fields} }
                 @{ $c->stash->{hits}->{hits} } ];
         my @ids = List::MoreUtils::uniq grep {defined}
-            map { ref $cself eq 'CODE' ? $cself->($_) : $_->{$cself} } @$data;
+            map { ref $cself eq 'CODE' ? $cself->( $_ ) : $_->{$cself} }
+            @$data;
         my $filter = { terms => { $config->{foreign} => [@ids] } };
         my $filtered = {%$query};    # don't work on $query
         $filtered->{filter}
@@ -146,9 +148,9 @@ sub join : ActionClass('Deserialize') {
             ? { and => [ $filter, $query->{filter} ] }
             : $filter;
         my $foreign = eval {
-            $c->model("CPAN::$type")->query( $filtered->{query} )
-                ->filter( $filtered->{filter} )->size(1000)->raw->all
-            } or do { $self->internal_error( $c, $@ ) };
+            $c->model( "CPAN::$type" )->query( $filtered->{query} )
+                ->filter( $filtered->{filter} )->size( 1000 )->raw->all;
+        } or do { $self->internal_error( $c, $@ ) };
         $c->detach(
             "/not_allowed",
             [   "The number of joined documents exceeded the allowed number of 1000 documents by "
@@ -156,9 +158,9 @@ sub join : ActionClass('Deserialize') {
                     . ". Please reduce the number of documents or apply additional filters."
             ]
         ) if ( $foreign->{hits}->{total} > 1000 );
-        $c->stash->{took} += $foreign->{took} unless ($is_get);
+        $c->stash->{took} += $foreign->{took} unless ( $is_get );
 
-        if ($has_many) {
+        if ( $has_many ) {
             my $many;
             for ( @{ $foreign->{hits}->{hits} } ) {
                 my $list = $many->{ $_->{_source}->{ $config->{foreign} } }
@@ -171,9 +173,9 @@ sub join : ActionClass('Deserialize') {
             $foreign = { map { $_->{_source}->{ $config->{foreign} } => $_ }
                     @{ $foreign->{hits}->{hits} } };
         }
-        for (@$data) {
-            my $key = ref $cself eq 'CODE' ? $cself->($_) : $_->{$cself};
-            next unless ($key);
+        for ( @$data ) {
+            my $key = ref $cself eq 'CODE' ? $cself->( $_ ) : $_->{$cself};
+            next unless ( $key );
             my $result = $foreign->{$key};
             $_->{$join}
                 = $has_many
@@ -190,29 +192,29 @@ sub join : ActionClass('Deserialize') {
 
 sub not_found : Private {
     my ( $self, $c ) = @_;
-    $c->res->code(404);
+    $c->res->code( 404 );
     $c->stash( { message => 'Not found' } );
 }
 
 sub internal_error {
     my ( $self, $c, $message ) = @_;
-    $c->res->code(500);
-    if ( eval { $message->isa('ElasticSearch::Error') } ) {
-        $c->res->content_type('text/plain');
+    $c->res->code( 500 );
+    if ( eval { $message->isa( 'ElasticSearch::Error' ) } ) {
+        $c->res->content_type( 'text/plain' );
         $c->res->body( $message->{'-text'} );
         $c->detach;
     }
     else {
         $c->stash( { message => "$message" } );
-        $c->detach( $c->view('JSON') );
+        $c->detach( $c->view( 'JSON' ) );
     }
 }
 
 sub end : Private {
     my ( $self, $c ) = @_;
-    $c->forward("join")
-        if ( $self->has_relationships && $c->req->param('join') );
-    $c->forward("/end");
+    $c->forward( "join" )
+        if ( $self->has_relationships && $c->req->param( 'join' ) );
+    $c->forward( "/end" );
 }
 
 __PACKAGE__->meta->make_immutable;

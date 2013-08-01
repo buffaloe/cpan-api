@@ -73,26 +73,29 @@ sub run {
     my $self = shift;
     my ( undef, @args ) = @{ $self->extra_argv };
     my @files;
-    for (@args) {
+    for ( @args ) {
         if ( -d $_ ) {
             log_info {"Looking for tarballs in $_"};
             my $find = File::Find::Rule->new->file->name(
-                qr/\.(tgz|tbz|tar[\._-]gz|tar\.bz2|tar\.Z|zip|7z)$/);
+                qr/\.(tgz|tbz|tar[\._-]gz|tar\.bz2|tar\.Z|zip|7z)$/ );
             $find = $find->mtime( ">" . ( time - $self->age * 3600 ) )
                 if ( $self->age );
             push(
                 @files,
                 map { $_->{file} } sort { $a->{mtime} <=> $b->{mtime} } map {
-                    +{ file => $_, mtime => File::stat::stat($_)->mtime }
-                    } $find->in($_)
+                    +{  file  => $_,
+                        mtime => File::stat::stat( $_ )->mtime
+                        }
+                } $find->in( $_ )
             );
         }
         elsif ( -f $_ ) {
             push( @files, $_ );
         }
-        elsif ( $_ =~ /^https?:\/\// && CPAN::DistnameInfo->new($_)->cpanid )
+        elsif ( $_ =~ /^https?:\/\//
+            && CPAN::DistnameInfo->new( $_ )->cpanid )
         {
-            my $d    = CPAN::DistnameInfo->new($_);
+            my $d    = CPAN::DistnameInfo->new( $_ );
             my $file = $self->home->file(
                 qw(var tmp http authors),
                 MetaCPAN::Document::Author::_build_dir( $d->cpanid ),
@@ -130,15 +133,15 @@ sub run {
     while ( my $file = shift @files ) {
 
         if ( $self->skip ) {
-            my $d     = CPAN::DistnameInfo->new($file);
-            my $count = $cpan->type('release')->filter(
+            my $d     = CPAN::DistnameInfo->new( $file );
+            my $count = $cpan->type( 'release' )->filter(
                 {   and => [
                         { term => { archive => $d->filename } },
                         { term => { author  => $d->cpanid } },
                     ]
                 }
-            )->inflate(0)->count;
-            if ($count) {
+            )->inflate( 0 )->count;
+            if ( $count ) {
                 log_info {"Skipping $file"};
                 next;
             }
@@ -152,14 +155,14 @@ sub run {
             push( @pid, $pid );
         }
         else {
-            try { $self->import_tarball($file) }
+            try { $self->import_tarball( $file ) }
             catch {
                 log_fatal {$_};
             };
             exit if ( $self->children );
         }
     }
-    waitpid( -1, 0 ) for (@pid);
+    waitpid( -1, 0 ) for ( @pid );
     $self->index->refresh;
 }
 
@@ -167,23 +170,24 @@ sub import_tarball {
     my ( $self, $tarball ) = @_;
     my $cpan = $self->index;
 
-    $tarball = Path::Class::File->new($tarball);
-    my $d = CPAN::DistnameInfo->new($tarball);
+    $tarball = Path::Class::File->new( $tarball );
+    my $d = CPAN::DistnameInfo->new( $tarball );
     my ( $author, $archive, $name )
         = ( $d->cpanid, $d->filename, $d->distvname );
     log_info {"Processing $tarball"};
 
     # load Archive::Any in the child due to bugs in MMagic and MIME::Types
     require Archive::Any;
-    my $at = Archive::Any->new($tarball);
+    my $at = Archive::Any->new( $tarball );
     my $tmpdir = dir( File::Temp::tempdir( CLEANUP => 0 ) );
 
-    log_error { "$tarball is being impolite" } if $at->is_impolite;
+    log_error {"$tarball is being impolite"} if $at->is_impolite;
+
     # TODO: add release to the index with status => 'broken' and move along
-    log_error { "$tarball is being naughty" }  if $at->is_naughty;
+    log_error {"$tarball is being naughty"} if $at->is_naughty;
 
     log_debug {"Extracting archive to filesystem"};
-    $at->extract($tmpdir);
+    $at->extract( $tmpdir );
 
     my $date    = DateTime->from_epoch( epoch => $tarball->stat->mtime );
     my $version = MetaCPAN::Util::fix_version( $d->version );
@@ -199,11 +203,11 @@ sub import_tarball {
     my $st = $tarball->stat;
     my $stat = { map { $_ => $st->$_ } qw(mode uid gid size mtime) };
 
-    $meta = $self->load_meta_file($tmpdir) || $meta;
+    $meta = $self->load_meta_file( $tmpdir ) || $meta;
 
     log_debug {"Gathering dependencies"};
 
-    my @dependencies = $self->dependencies($meta);
+    my @dependencies = $self->dependencies( $meta );
 
     log_debug { "Found ", scalar @dependencies, " dependencies" };
 
@@ -225,24 +229,27 @@ sub import_tarball {
         if ( $release->{abstract} eq 'unknown'
         || $release->{abstract} eq 'null' );
 
-    $release = $cpan->type('release')->put( $release, { refresh => 1 } );
+    $release = $cpan->type( 'release' )->put( $release, { refresh => 1 } );
 
     # create will die if the document already exists
-    eval { $cpan->type('distribution')->put({ name => $d->dist }, { create => 1 }) };
+    eval {
+        $cpan->type( 'distribution' )
+            ->put( { name => $d->dist }, { create => 1 } );
+    };
 
     my @files;
     my @list = $at->files;
     log_debug { "Indexing ", scalar @files, " files" };
-    my $file_set = $cpan->type('file');
+    my $file_set = $cpan->type( 'file' );
     my $bulk = $cpan->bulk( size => 10 );
 
     File::Find::find(
         sub {
             my $child
                 = -d $File::Find::name
-                ? dir($File::Find::name)
-                : file($File::Find::name);
-            my $relative = $child->relative($tmpdir);
+                ? dir( $File::Find::name )
+                : file( $File::Find::name );
+            my $relative = $child->relative( $tmpdir );
             my $stat     = do {
                 my $s = $child->stat;
                 +{ map { $_ => $s->$_ } qw(mode uid gid size mtime) };
@@ -269,12 +276,12 @@ sub import_tarball {
                     stat         => $stat,
                     maturity     => $d->maturity,
                     status       => $release->status,
-                    indexed      => $meta->should_index_file($fpath) ? 1 : 0,
-                    binary       => -B $child,
+                    indexed => $meta->should_index_file( $fpath ) ? 1 : 0,
+                    binary  => -B $child,
                     content_cb => sub { \( scalar $child->slurp ) },
                 }
             );
-            $bulk->put($file);
+            $bulk->put( $file );
             push( @files, $file );
         },
         $tmpdir
@@ -286,10 +293,12 @@ sub import_tarball {
     # build module -> pod file mapping
     # $file->clear_documentation to force a rebuild
     my %associated_pod;
-    for(grep { $_->indexed && $_->documentation } @files) {
+    for ( grep { $_->indexed && $_->documentation } @files ) {
         my $documentation = $_->clear_documentation;
-        $associated_pod{$documentation} = [ @{$associated_pod{$documentation} || []}, $_ ];
+        $associated_pod{$documentation}
+            = [ @{ $associated_pod{$documentation} || [] }, $_ ];
     }
+
     # find modules
     my @modules;
     if ( my %provides = %{ $meta->provides } ) {
@@ -308,13 +317,13 @@ sub import_tarball {
     }
     else {
         @files = grep { $_->name =~ /\.pm$/ } grep { $_->indexed } @files;
-        foreach my $file (@files) {
+        foreach my $file ( @files ) {
             eval {
                 local $SIG{'ALRM'} = sub {
                     log_error {"Call to Module::Metadata timed out "};
                     die;
                 };
-                alarm(5);
+                alarm( 5 );
                 my $info;
                 {
                     local $SIG{__WARN__} = sub { };
@@ -323,13 +332,13 @@ sub import_tarball {
                 }
                 $file->add_module(
                     {   name => $_,
-                        defined $info->version($_)
-                        ? ( version => $info->version($_)->stringify )
+                        defined $info->version( $_ )
+                        ? ( version => $info->version( $_ )->stringify )
                         : ()
                     }
                 ) for ( grep { $_ ne 'main' } $info->packages_inside );
                 push( @modules, $file );
-                alarm(0);
+                alarm( 0 );
             };
         }
     }
@@ -337,38 +346,38 @@ sub import_tarball {
     my $perms = $self->perms;
     my @release_unauthorized;
     my @provides;
-    foreach my $file (@modules) {
+    foreach my $file ( @modules ) {
         $_->set_associated_pod( $file, \%associated_pod )
             for ( @{ $file->module } );
-        $file->set_indexed($meta);
-        push( @release_unauthorized, $file->set_authorized($perms) )
+        $file->set_indexed( $meta );
+        push( @release_unauthorized, $file->set_authorized( $perms ) )
             if ( keys %$perms );
-        for(@{$file->module}) {
-            push(@provides, $_->name) if $_->indexed && $_->authorized;
+        for ( @{ $file->module } ) {
+            push( @provides, $_->name ) if $_->indexed && $_->authorized;
         }
         $file->clear_module if ( $file->is_pod_file );
         log_trace {"reindexing file $file->{path}"};
-        $bulk->put($file);
-        if(!$release->has_abstract && $file->abstract) {
-            (my $module = $release->distribution) =~ s/-/::/g;
-            $release->abstract($file->abstract);
+        $bulk->put( $file );
+        if ( !$release->has_abstract && $file->abstract ) {
+            ( my $module = $release->distribution ) =~ s/-/::/g;
+            $release->abstract( $file->abstract );
             $release->put;
         }
     }
-    if(@provides) {
-        $release->provides(\@provides);
+    if ( @provides ) {
+        $release->provides( \@provides );
         $release->put;
     }
     $bulk->commit;
 
-    if (@release_unauthorized) {
+    if ( @release_unauthorized ) {
         log_info {
             "release "
                 . $release->name
                 . " contains unauthorized modules: "
                 . join( ",", map { $_->name } @release_unauthorized );
         };
-        $release->authorized(0);
+        $release->authorized( 0 );
         $release->put;
     }
 
@@ -383,16 +392,17 @@ sub import_tarball {
 sub load_meta_file {
     my ( $self, $dir ) = @_;
     my @files;
-    for (qw{*/META.json */META.yml */META.yaml META.json META.yml META.yaml})
+    for (
+        qw{*/META.json */META.yml */META.yaml META.json META.yml META.yaml} )
     {
 
         # scalar context globbing (without exhausting results) produces
         # confusing results (which caused existsing */META.json files to
         # get skipped).  using list context seems more reliable.
-        my ($path) = <$dir/$_>;
+        my ( $path ) = <$dir/$_>;
         push( @files, $path ) if ( $path && -e $path );
     }
-    return unless (@files);
+    return unless ( @files );
 
     #  YAML YAML::Tiny YAML::XS don't offer better results
     my @backends = qw(CPAN::Meta::YAML YAML::Syck);
@@ -400,16 +410,16 @@ sub load_meta_file {
     while ( my $mod = shift @backends ) {
         $ENV{PERL_YAML_BACKEND} = $mod;
         my $last;
-        for my $file (@files) {
+        for my $file ( @files ) {
             try {
-                $last = CPAN::Meta->load_file($file);
+                $last = CPAN::Meta->load_file( $file );
             }
             catch { $error = $_ };
-            if ($last) {
+            if ( $last ) {
                 last;
             }
         }
-        if ($last) {
+        if ( $last ) {
             push(
                 @{ $last->{no_index}->{directory} },
                 qw(t xt inc example blib examples eg)
@@ -419,7 +429,7 @@ sub load_meta_file {
     }
 
     log_warn {"META file could not be loaded: $error"}
-    unless (@backends);
+    unless ( @backends );
 }
 
 sub dependencies {
@@ -447,7 +457,7 @@ sub dependencies {
 
 sub _build_backpan_index {
     my $self = shift;
-    my $ls   = $self->cpan->file(qw(indices find-ls.gz));
+    my $ls   = $self->cpan->file( qw(indices find-ls.gz) );
     unless ( -e $ls ) {
         log_error {"File $ls does not exist"};
         exit;
@@ -455,8 +465,8 @@ sub _build_backpan_index {
     log_info {"Reading $ls"};
     my $cpan = {};
     open my $fh, "<:gzip", $ls;
-    while (<$fh>) {
-        my $path = ( split(/\s+/) )[-1];
+    while ( <$fh> ) {
+        my $path = ( split( /\s+/ ) )[-1];
         next unless ( $path =~ /^authors\/id\/\w+\/\w+\/(.*)$/ );
         $cpan->{$1} = 1;
     }
@@ -478,14 +488,14 @@ sub detect_status {
 
 sub _build_perms {
     my $self = shift;
-    my $file = $self->cpan->file(qw(modules 06perms.txt));
+    my $file = $self->cpan->file( qw(modules 06perms.txt) );
     my %authors;
     if ( -e $file ) {
         log_debug { "parsing ", $file };
         my $fh = $file->openr;
         while ( my $line = <$fh> ) {
             my ( $module, $author, $type ) = split( /,/, $line );
-            next unless ($type);
+            next unless ( $type );
             $authors{$module} ||= [];
             push( @{ $authors{$module} }, $author );
         }
@@ -495,7 +505,7 @@ sub _build_perms {
         log_warn {"$file could not be found."};
     }
 
-    my $packages = $self->cpan->file(qw(modules 02packages.details.txt.gz));
+    my $packages = $self->cpan->file( qw(modules 02packages.details.txt.gz) );
     if ( -e $packages ) {
         log_debug { "parsing ", $packages };
         open my $fh, "<:gzip", $packages;

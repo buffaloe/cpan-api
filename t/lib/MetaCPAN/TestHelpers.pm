@@ -1,4 +1,4 @@
-package # no_index
+package    # no_index
     MetaCPAN::TestHelpers;
 
 use base 'Exporter';
@@ -19,9 +19,9 @@ Passes strings through L</hex_escape>.
 =cut
 
 sub multiline_diag {
-    while( my ($name, $str) = splice(@_, 0, 2) ){
+    while ( my ( $name, $str ) = splice( @_, 0, 2 ) ) {
         $str =~ s/^/ |/mg;
-        diag "$name:\n" . hex_escape($str) . "\n";
+        diag "$name:\n" . hex_escape( $str ) . "\n";
     }
 }
 

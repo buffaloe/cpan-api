@@ -10,7 +10,7 @@ sub index : Path {
     my ( $self, $c ) = @_;
 
     my $callback = $c->request->uri->clone;
-    $callback->query(undef);
+    $callback->query( undef );
     my $fb = Facebook::Graph->new(
         app_id   => $self->consumer_key,
         secret   => $self->consumer_secret,
@@ -18,14 +18,14 @@ sub index : Path {
     );
 
     if ( my $code = $c->req->params->{code} ) {
-        my $token = eval { $fb->request_access_token($code)->token }
-            or $c->controller('OAuth2')->redirect( $c, error => 'token' );
-        my $data = $fb->query->find('me')->request->as_hashref;
+        my $token = eval { $fb->request_access_token( $code )->token }
+            or $c->controller( 'OAuth2' )->redirect( $c, error => 'token' );
+        my $data = $fb->query->find( 'me' )->request->as_hashref;
         $self->update_user( $c, facebook => $data->{id}, $data );
     }
     else {
         my $auth_url = $fb->authorize->uri_as_string;
-        $c->res->redirect($auth_url);
+        $c->res->redirect( $auth_url );
     }
 }
 

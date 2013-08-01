@@ -25,22 +25,23 @@ sub index : Path {
     my $code = $c->req->params->{code};
     my $id;
     if ( $code
-        && ( $id = $self->cache->get($code) ) )
+        && ( $id = $self->cache->get( $code ) ) )
     {
-        $self->cache->remove($code);
+        $self->cache->remove( $code );
         $self->update_user( $c, pause => $id, {} );
 
     }
     elsif ( ( $id = $c->req->parameters->{id} )
         && $c->req->parameters->{id} =~ /[a-zA-Z]+/ )
     {
-        my $author = $c->model('CPAN::Author')->get( uc($id) );
-        $c->controller('OAuth2')->redirect( $c, error => "author_not_found" )
-            unless ($author);
+        my $author = $c->model( 'CPAN::Author' )->get( uc( $id ) );
+        $c->controller( 'OAuth2' )
+            ->redirect( $c, error => "author_not_found" )
+            unless ( $author );
         my $code = $self->generate_sid;
         $self->cache->set( $code, $author->pauseid, 86400 );
         my $uri = $c->request->uri->clone;
-        $uri->query("code=$code");
+        $uri->query( "code=$code" );
         my $email = Email::Simple->create(
             header => [
                 'Content-Type' => 'text/plain; charset=utf-8',
@@ -49,10 +50,10 @@ sub index : Path {
                 Subject        => "Connect MetaCPAN with your PAUSE account",
                 'MIME-Version' => '1.0',
             ],
-            body => $self->email_body($author->name, $uri),
+            body => $self->email_body( $author->name, $uri ),
         );
-        Email::Sender::Simple->send($email);
-        $c->controller('OAuth2')->redirect( $c, success => "mail_sent" );
+        Email::Sender::Simple->send( $email );
+        $c->controller( 'OAuth2' )->redirect( $c, success => "mail_sent" );
     }
 }
 
@@ -61,7 +62,7 @@ sub generate_sid {
 }
 
 sub email_body {
-    my ($self, $name, $uri) = @_;
+    my ( $self, $name, $uri ) = @_;
 
     my $body = <<EMAIL_BODY;
 Hi ${name},
@@ -75,9 +76,8 @@ MetaCPAN
 EMAIL_BODY
 
     try {
-        $body = Encode::encode('UTF-8', $body,
-            Encode::FB_CROAK | Encode::LEAVE_SRC
-        );
+        $body = Encode::encode( 'UTF-8', $body,
+            Encode::FB_CROAK | Encode::LEAVE_SRC );
     }
     catch {
         warn $_[0];

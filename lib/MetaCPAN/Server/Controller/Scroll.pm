@@ -7,7 +7,7 @@ sub index : Path('/_search/scroll') {
     my ( $self, $c ) = @_;
     my $req = $c->req;
     my $res = eval {
-        $c->model('CPAN')->es->transport->request(
+        $c->model( 'CPAN' )->es->transport->request(
             {   method => $req->method,
                 qs     => $req->parameters,
                 cmd    => '/_search/scroll',
@@ -15,7 +15,7 @@ sub index : Path('/_search/scroll') {
             }
         );
     } or do { $self->internal_error( $c, $@ ); };
-    $c->stash($res);
+    $c->stash( $res );
 }
 
 1;

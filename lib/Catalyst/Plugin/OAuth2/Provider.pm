@@ -53,19 +53,19 @@ sub authorize : Local {
     my ( $response_type, $client_id, $redirect_uri, $scope, $state )
         = @$params{qw(response_type client_id redirect_uri scope state)};
     $self->redirect( $c, error => 'invalid_request' )
-        unless ($client_id);
+        unless ( $client_id );
     $self->redirect( $c, error => 'unauthorized_client' )
         unless ( $self->clients->{$client_id} );
     $redirect_uri = $self->clients->{$client_id}->{redirect_uri}->[0];
     $self->redirect( $c, error => 'invalid_request' )
-        unless ($redirect_uri);
+        unless ( $redirect_uri );
     $response_type ||= 'code';
-    my $uri  = URI->new($redirect_uri);
+    my $uri  = URI->new( $redirect_uri );
     my $code = $self->_build_code;
     $uri->query_form( { code => $code, $state ? ( state => $state ) : () } );
-    $c->user->code($code);
+    $c->user->code( $code );
     $c->user->put( { refresh => 1 } );
-    $c->res->redirect($uri);
+    $c->res->redirect( $uri );
 }
 
 sub access_token : Local {
@@ -76,7 +76,7 @@ sub access_token : Local {
     $grant_type ||= 'authorization_code';
     $self->bad_request( $c,
         invalid_request => 'client_id query parameter is required' )
-        unless ($client_id);
+        unless ( $client_id );
     $self->bad_request( $c,
         unauthorized_client => 'client_id does not exist' )
         unless ( $self->clients->{$client_id} );
@@ -87,17 +87,17 @@ sub access_token : Local {
     $redirect_uri = $self->clients->{$client_id}->{redirect_uri}->[0];
     $self->bad_request( $c,
         invalid_request => 'redirect_uri query parameter is required' )
-        unless ($redirect_uri);
+        unless ( $redirect_uri );
     $self->bad_request( $c,
         invalid_request => 'code query parameter is required' )
-        unless ($code);
-    my $user = $c->model('User::Account')->find_code($code);
+        unless ( $code );
+    my $user = $c->model( 'User::Account' )->find_code( $code );
     $self->bad_request( $c, access_denied => 'the code is invalid' )
-        unless ($user);
+        unless ( $user );
 
-    my ($access_token) = map { $_->{token} }
+    my ( $access_token ) = map { $_->{token} }
         grep { $_->{client} eq $client_id } @{ $user->access_token };
-    unless ($access_token) {
+    unless ( $access_token ) {
         $access_token = $self->_build_code;
         $user->add_access_token(
             { token => $access_token, client => $client_id } );
@@ -105,7 +105,7 @@ sub access_token : Local {
     $user->clear_token;
     $user->put( { refresh => 1 } );
 
-    $c->res->content_type('application/json');
+    $c->res->content_type( 'application/json' );
     $c->res->body(
         encode_json(
             { access_token => $access_token, token_type => 'bearer' }
@@ -116,8 +116,8 @@ sub access_token : Local {
 
 sub bad_request {
     my ( $self, $c, $type, $message ) = @_;
-    $c->res->code(500);
-    $c->res->content_type('application/json');
+    $c->res->code( 500 );
+    $c->res->content_type( 'application/json' );
     $c->res->body(
         encode_json( { error => $type, error_description => $message } ) );
     $c->detach;
@@ -133,22 +133,23 @@ sub redirect {
     my ( $self, $c, $type, $message ) = @_;
     my $clients = $self->clients;
     my $params  = $c->req->params;
-    if ( my $cid = $c->req->cookie('oauth_tmp') ) {
+    if ( my $cid = $c->req->cookie( 'oauth_tmp' ) ) {
         eval { $params = decode_json( $cid->value ) };
-        $cid->expires('-1y');
+        $cid->expires( '-1y' );
         $c->res->cookies->{oauth_tmp} = $cid;
     }
     my ( $client, $redirect_uri ) = @$params{qw(client_id redirect_uri)};
+
     # we don't trust the user's redirect uri
     $redirect_uri = $self->clients->{$client}->{redirect_uri}->[0]
-        if($client);
+        if ( $client );
 
-    if ($redirect_uri) {
+    if ( $redirect_uri ) {
         $c->res->redirect( $redirect_uri . "?$type=$message" );
     }
     else {
         $c->res->body( encode_json( { $type => $message } ) );
-        $c->res->content_type('application/json');
+        $c->res->content_type( 'application/json' );
     }
     $c->detach;
 }

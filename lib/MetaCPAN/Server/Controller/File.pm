@@ -24,7 +24,7 @@ __PACKAGE__->config(
 sub find : Path('') {
     my ( $self, $c, $author, $release, @path ) = @_;
     eval {
-        my $file = $self->model($c)->raw->get(
+        my $file = $self->model( $c )->raw->get(
             {   author  => $author,
                 release => $release,
                 path    => join( '/', @path )

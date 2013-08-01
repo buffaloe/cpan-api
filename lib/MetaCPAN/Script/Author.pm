@@ -34,7 +34,7 @@ sub run {
 
 sub index_authors {
     my $self    = shift;
-    my $type    = $self->index->type('author');
+    my $type    = $self->index->type( 'author' );
     my $authors = XMLin( $self->author_fh )->{cpanid};
     my $count   = keys %$authors;
     log_debug {"Counting author"};
@@ -42,13 +42,13 @@ sub index_authors {
 
     log_debug {"Getting last update dates"};
     my $dates
-        = $type->inflate(0)->filter( { exists => { field => 'updated' } } )
-        ->size(99999)->all;
+        = $type->inflate( 0 )->filter( { exists => { field => 'updated' } } )
+        ->size( 99999 )->all;
     $dates = {
         map {
             $_->{pauseid} =>
                 DateTime::Format::ISO8601->parse_datetime( $_->{updated} )
-            } map { $_->{_source} } @{ $dates->{hits}->{hits} }
+        } map { $_->{_source} } @{ $dates->{hits}->{hits} }
     };
 
     my $bulk = $self->model->bulk( size => 500 );
@@ -57,8 +57,8 @@ sub index_authors {
         my ( $name, $email, $homepage, $asciiname )
             = ( @$data{qw(fullname email homepage asciiname)} );
         $name = undef if ( ref $name );
-        $email = lc($pauseid) . '@cpan.org'
-            unless ( $email && Email::Valid->address($email) );
+        $email = lc( $pauseid ) . '@cpan.org'
+            unless ( $email && Email::Valid->address( $email ) );
         log_debug {
             Encode::encode_utf8(
                 sprintf( "Indexing %s: %s <%s>", $pauseid, $name, $email ) );
@@ -79,12 +79,12 @@ sub index_authors {
 
             # normalize www.homepage.com to http://www.homepage.com
             map { $_->scheme ? $_->as_string : 'http://' . $_->as_string }
-                map  { URI->new($_)->canonical }
+                map  { URI->new( $_ )->canonical }
                 grep {$_} @{ $put->{website} }
         ];
-        my $author = $type->new_document($put);
+        my $author = $type->new_document( $put );
         $author->gravatar_url;    # build gravatar_url
-        $bulk->put($author);
+        $bulk->put( $author );
     }
     $self->index->refresh;
     log_info {"done"};
@@ -94,14 +94,15 @@ sub author_config {
     my ( $self, $pauseid, $dates ) = @_;
     my $fallback = $dates->{$pauseid} ? undef : {};
     my $dir = $self->cpan->subdir( 'authors',
-        MetaCPAN::Util::author_dir($pauseid) );
+        MetaCPAN::Util::author_dir( $pauseid ) );
     my @files;
     opendir( my $dh, $dir ) || return {};
-    my ($file)
-        = sort { $dir->file($b)->stat->mtime <=> $dir->file($a)->stat->mtime }
-        grep   {m/author-.*?\.json/} readdir($dh);
-    return $fallback unless ($file);
-    $file = $dir->file($file);
+    my ( $file ) = sort {
+        $dir->file( $b )->stat->mtime <=> $dir->file( $a )->stat->mtime
+        }
+        grep {m/author-.*?\.json/} readdir( $dh );
+    return $fallback unless ( $file );
+    $file = $dir->file( $file );
     return $fallback if !-e $file;
     my $mtime = DateTime->from_epoch( epoch => $file->stat->mtime );
 
@@ -110,9 +111,9 @@ sub author_config {
         return undef;
     }
     my $json = $file->slurp;
-    my $author = eval { JSON::XS->new->utf8->relaxed->decode($json) };
+    my $author = eval { JSON::XS->new->utf8->relaxed->decode( $json ) };
 
-    if ($@) {
+    if ( $@ ) {
         log_warn {"$file is broken: $@"};
         return $fallback;
     }

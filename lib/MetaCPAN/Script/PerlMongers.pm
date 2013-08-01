@@ -58,12 +58,12 @@ sub get_pm_groups {
     my $xml    = XMLin( $mech->content );
     my @groups = ();
     my %groups = %{ $xml->{group} };
-    
+
     foreach my $pm_name ( sort keys %groups ) {
-        
+
         my $group = $groups{$pm_name};
         my $date  = delete $group->{date};
-        
+
         if ( $date ) {
             my $date_key   = $date->{type} . '_date';
             my $date_value = $date->{content};
@@ -72,13 +72,13 @@ sub get_pm_groups {
             }
             $group->{$date_key} = $date_value;
         }
-        
+
         my $id = delete $group->{id};
         $group->{pm_id} = $id;
-        
+
         $pm_name =~ s{[\s\-]}{}gxms;
-        $group->{name}  = $pm_name;
-        
+        $group->{name} = $pm_name;
+
         push @groups, $group;
     }
 

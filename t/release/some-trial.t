@@ -5,8 +5,8 @@ use warnings;
 use MetaCPAN::Server::Test;
 
 my $model   = model();
-my $idx     = $model->index('cpan');
-my $release = $idx->type('release')->get(
+my $idx     = $model->index( 'cpan' );
+my $release = $idx->type( 'release' )->get(
     {   author => 'LOCAL',
         name   => 'Some-1.00-TRIAL'
     }

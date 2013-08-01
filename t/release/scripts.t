@@ -5,8 +5,8 @@ use warnings;
 use MetaCPAN::Server::Test;
 
 my $model   = model();
-my $idx     = $model->index('cpan');
-my $release = $idx->type('release')->get(
+my $idx     = $model->index( 'cpan' );
+my $release = $idx->type( 'release' )->get(
     {   author => 'MO',
         name   => 'Scripts-0.01'
     }
@@ -19,7 +19,7 @@ is( $release->author, 'MO', 'author ok' );
 is( $release->version, '0.01', 'version ok' );
 
 {
-    my @files = $idx->type('file')->filter(
+    my @files = $idx->type( 'file' )->filter(
         {   and => [
                 { term => { mime         => 'text/x-script.perl' } },
                 { term => { distribution => 'Scripts' } }
@@ -36,7 +36,7 @@ is( $release->version, '0.01', 'version ok' );
                     indexed       => $_->indexed,
                     mime          => $_->mime
                 }
-                } @files
+            } @files
         ],
         [   {   documentation => 'catalyst',
                 indexed       => 1,

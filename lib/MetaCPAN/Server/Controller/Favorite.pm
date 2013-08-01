@@ -6,7 +6,7 @@ with 'MetaCPAN::Server::Role::JSONP';
 sub find : Path('') : Args(2) {
     my ( $self, $c, $user, $distribution ) = @_;
     eval {
-        my $favorite = $self->model($c)->raw->get(
+        my $favorite = $self->model( $c )->raw->get(
             {   user         => $user,
                 distribution => $distribution
             }

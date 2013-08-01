@@ -7,9 +7,9 @@ has '+type' => ( default => 'file' );
 sub get : Path('') : Args(1) {
     my ( $self, $c, $name ) = @_;
     eval {
-        my $file = $self->model($c)->raw->find($name);
+        my $file = $self->model( $c )->raw->find( $name );
         $c->stash( $file->{_source} || $file->{fields} );
-    } or $c->detach('/not_found', [$@]);
+    } or $c->detach( '/not_found', [$@] );
 }
 
 1;
